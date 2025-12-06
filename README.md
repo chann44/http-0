@@ -11,4 +11,6 @@ A git-native HTTP client for developers, not retards.
 - Environment variables
 - Interceptors
 - Version control friendly
+- Response Validation
+- Code Generation
 
