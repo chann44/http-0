@@ -2,13 +2,14 @@ package internals
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
-func (r *RequestDefinition) Build() (req *http.Request, err error) {
+func Build(r *RequestDefinition) (req *http.Request, err error) {
 	req, err = http.NewRequest(r.Method, r.URL, r.Body)
 
 	if len(r.Headers) != 0 {
@@ -22,6 +23,7 @@ func (r *RequestDefinition) Build() (req *http.Request, err error) {
 		for k, v := range r.Query {
 			q.Set(k, v)
 		}
+		req.URL.RawQuery = q.Encode()
 	}
 	return req, err
 }
@@ -66,6 +68,14 @@ func ExecuteRequest(client *http.Client, request *http.Request) (Response, error
 
 func ParseRequestfromYaml(requestStr []byte) (*RequestDefinition, error) {
 	var requestDef RequestDefinition
-	err := yaml.Unmarshal(requestStr, requestDef)
-	return &requestDef, err
+
+	if err := yaml.Unmarshal(requestStr, &requestDef); err != nil {
+		return nil, err
+	}
+
+	if requestDef.URL == "" || requestDef.Method == "" {
+		return nil, fmt.Errorf("invalid request: missing required fields")
+	}
+
+	return &requestDef, nil
 }
