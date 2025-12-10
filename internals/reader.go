@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-func ReadRequestFile(path string) ([]byte, error) {
+func ReadFileToBytes(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-func GetAllRequestInProject(cwd string) ([]string, error) {
+func GetFiles(cwd string) ([]string, error) {
 	var files []string
 
 	err := filepath.WalkDir(cwd, func(path string, d os.DirEntry, err error) error {

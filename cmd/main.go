@@ -17,7 +17,7 @@ func main() {
 
 	cwd = filepath.Join(cwd, "requests")
 
-	requests, err := internals.GetAllRequestInProject(cwd)
+	requests, err := internals.GetFiles(cwd)
 	if err != nil {
 		fmt.Printf("Failed to process requests: %v\n", err)
 		return
@@ -26,7 +26,7 @@ func main() {
 	var parsedRequests []internals.RequestDefinition
 
 	for _, reqPath := range requests {
-		reqBytes, err := internals.ReadRequestFile(reqPath)
+		reqBytes, err := internals.ReadFileToBytes(reqPath)
 		if err != nil {
 			fmt.Printf("Failed to read request file %s: %v\n", reqPath, err)
 			continue
