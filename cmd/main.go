@@ -17,12 +17,10 @@ func main() {
 
 	cwd = filepath.Join(cwd, "requests")
 
-	fmt.Printf(cwd)
 	requests, err := internals.GetAllRequestInProject(cwd)
-	fmt.Printf("%v", requests)
-
 	if err != nil {
-		fmt.Printf("failed to process requests", err)
+		fmt.Printf("Failed to process requests: %v\n", err)
+		return
 	}
 
 	var parsedRequests []internals.RequestDefinition
@@ -30,12 +28,12 @@ func main() {
 	for _, reqPath := range requests {
 		reqBytes, err := internals.ReadRequestFile(reqPath)
 		if err != nil {
-			fmt.Printf("failed to parse request from yaml", err)
+			fmt.Printf("Failed to read request file %s: %v\n", reqPath, err)
 			continue
 		}
 		parsedReq, err := internals.ParseRequestfromYaml(reqBytes)
 		if err != nil {
-			fmt.Printf("failed to parse request bytes int requet defination", err)
+			fmt.Printf("Failed to parse request from %s: %v\n", reqPath, err)
 			continue
 		}
 		parsedRequests = append(parsedRequests, *parsedReq)
@@ -46,10 +44,19 @@ func main() {
 	for _, rp := range parsedRequests {
 		req, err := internals.Build(&rp)
 		if err != nil {
-			fmt.Printf("Failed to prcess request %v", rp.Name)
+			fmt.Printf("Failed to build request %s: %v\n", rp.Name, err)
 			continue
 		}
 		requeestsToProcess = append(requeestsToProcess, req)
 	}
 
+	client := &http.Client{}
+
+	for _, req := range requeestsToProcess {
+		_, err := internals.ExecuteRequest(client, req)
+		if err != nil {
+			fmt.Printf("Failed to execute request: %v\n", err)
+			continue
+		}
+	}
 }

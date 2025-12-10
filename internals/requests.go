@@ -3,7 +3,9 @@ package internals
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -37,13 +39,23 @@ func ExecuteRequest(client *http.Client, request *http.Request) (Response, error
 	}
 	defer resp.Body.Close()
 
-	var result interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return Response{
 			StatusCode: resp.StatusCode,
 			Error:      err,
 			Duration:   time.Since(start).Seconds(),
 		}, err
+	}
+
+	var result interface{}
+	contentType := resp.Header.Get("Content-Type")
+	if strings.Contains(contentType, "application/json") || json.Valid(bodyBytes) {
+		if err := json.Unmarshal(bodyBytes, &result); err != nil {
+			result = string(bodyBytes)
+		}
+	} else {
+		result = string(bodyBytes)
 	}
 
 	headers := make(map[string]string)
@@ -55,6 +67,48 @@ func ExecuteRequest(client *http.Client, request *http.Request) (Response, error
 	for _, cookie := range resp.Cookies() {
 		cookies[cookie.Name] = cookie.Value
 	}
+
+	fmt.Println("\n" + strings.Repeat("=", 60))
+	fmt.Printf("Request: %s %s\n", request.Method, request.URL.String())
+	fmt.Println(strings.Repeat("=", 60))
+	fmt.Printf("Status Code: %d %s\n", resp.StatusCode, http.StatusText(resp.StatusCode))
+	fmt.Printf("Duration: %.3f seconds\n", time.Since(start).Seconds())
+
+	if resp.Header.Get("X-Request-Id") != "" {
+		fmt.Printf("Request ID: %s\n", resp.Header.Get("X-Request-Id"))
+	}
+
+	fmt.Println("\nHeaders:")
+	for k, v := range headers {
+		fmt.Printf("  %s: %s\n", k, v)
+	}
+
+	if len(cookies) > 0 {
+		fmt.Println("\nCookies:")
+		for k, v := range cookies {
+			fmt.Printf("  %s: %s\n", k, v)
+		}
+	}
+
+	fmt.Println("\nResponse Body:")
+	if jsonData, ok := result.(map[string]interface{}); ok {
+		prettyJSON, err := json.MarshalIndent(jsonData, "", "  ")
+		if err == nil {
+			fmt.Println(string(prettyJSON))
+		} else {
+			fmt.Printf("%v\n", result)
+		}
+	} else if jsonArray, ok := result.([]interface{}); ok {
+		prettyJSON, err := json.MarshalIndent(jsonArray, "", "  ")
+		if err == nil {
+			fmt.Println(string(prettyJSON))
+		} else {
+			fmt.Printf("%v\n", result)
+		}
+	} else {
+		fmt.Printf("%v\n", result)
+	}
+	fmt.Println(strings.Repeat("=", 60))
 
 	return Response{
 		StatusCode: resp.StatusCode,
