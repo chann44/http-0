@@ -1,0 +1,5 @@
+name: createPost
+method: POST
+url: https://jsonplaceholder.typicode.com/posts
+headers:
+  Content-Type: application/json

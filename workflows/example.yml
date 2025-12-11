@@ -1,0 +1,24 @@
+name: User Posts Workflow
+environment: production
+variables:
+  apiBase: https://jsonplaceholder.typicode.com
+
+steps:
+  - name: fetchUser
+    request: getUser
+    extract:
+      userId: id
+      userName: name
+      userEmail: email
+
+  - name: fetchPosts
+    request: getPosts
+    query:
+      userId: "{{fetchUser|id}}"
+
+  - name: createNewPost
+    request: createPost
+    body:
+      title: "Post by {{fetchUser|name}}"
+      body: "This is a post created by user {{fetchUser|email}}"
+      userId: "{{fetchUser|id}}"

@@ -1,0 +1,22 @@
+name: Advanced Chaining Example
+environment: production
+variables:
+  baseUrl: https://jsonplaceholder.typicode.com
+
+steps:
+  - name: getAllPosts
+    request: getPosts
+    extract:
+      firstPostId: 0|id
+      firstPostTitle: 0|title
+      firstPostUserId: 0|userId
+
+  - name: getPostAuthor
+    request: getUser
+
+  - name: createRelatedPost
+    request: createPost
+    body:
+      title: "Reply to: {{getAllPosts|0|title}}"
+      body: "This is a reply to the post by {{getPostAuthor|name}}"
+      userId: "{{getAllPosts|0|userId}}"
